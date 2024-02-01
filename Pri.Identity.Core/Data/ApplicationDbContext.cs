@@ -25,8 +25,8 @@ namespace Pri.Identity.Core.Data
             const string AdminRoleName = "Admin";
 
             const string AdminUserId = "00000000-0000-0000-0000-000000000001";
-            const string AdminUserName = "admin@programmingintegration.be";
-            const string AdminUserPassword = "Test123?"; // For demo purposes only! Don't do this in real application!
+            const string AdminUserName = "admin@pri.be";
+            const string AdminUserPassword = "Test123"; // For demo purposes only! Don't do this in real application!
 
             IPasswordHasher<ApplicationUser> passwordHasher = new PasswordHasher<ApplicationUser>(); // Identity password hasher
 

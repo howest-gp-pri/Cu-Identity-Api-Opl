@@ -20,9 +20,15 @@ namespace Pri.Identity.Api
             builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Identity configuration
-            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => // AddIdentity because UI package is not needed, if UI is needed then AddDefaultIdentity<ApplicationUser>
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => 
             {
+                //only for testing purposes!
                 options.SignIn.RequireConfirmedEmail = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequiredLength = 5;
             })
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             builder.Services.AddAuthentication(option =>
