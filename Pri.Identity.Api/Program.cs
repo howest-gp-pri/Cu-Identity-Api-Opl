@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Pri.Identity.Core.Data;
 using Pri.Identity.Core.Entities;
+using System.Globalization;
+using System.Security.Claims;
 using System.Text;
 
 namespace Pri.Identity.Api
@@ -20,7 +22,7 @@ namespace Pri.Identity.Api
             builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Identity configuration
-            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => 
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 //only for testing purposes!
                 options.SignIn.RequireConfirmedEmail = false;
@@ -36,19 +38,52 @@ namespace Pri.Identity.Api
                 option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-    .AddJwtBearer(jwtOptions =>
-    {
-        jwtOptions.TokenValidationParameters = new TokenValidationParameters()
-        {
-            ValidateActor = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidIssuer = builder.Configuration["JWTConfiguration:Issuer"],
-            ValidAudience = builder.Configuration["JWTConfiguration:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTConfiguration:SigningKey"]))
-        };
-    });
-
+            .AddJwtBearer(jwtOptions =>
+            {
+                jwtOptions.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateActor = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = builder.Configuration["JWTConfiguration:Issuer"],
+                    ValidAudience = builder.Configuration["JWTConfiguration:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTConfiguration:SigningKey"]))
+                };
+            });
+            //add authorization
+            builder.Services.AddAuthorization(options =>
+            {
+                //city policy
+                options.AddPolicy("OnlyCitizensFromBruges",
+                    policy =>
+                    {
+                        policy.RequireClaim("city", new List<string> { "brugge", "Brugge" });
+                    });
+                //admin policy
+                options.AddPolicy("Admin", policy =>
+                {
+                    policy.RequireClaim(ClaimTypes.Role, new List<string> { "admin", "Admin" });
+                });
+                //loyalmember policy
+                options.AddPolicy("OnlyLoyalMembers", policy =>
+                policy.RequireAssertion(context => 
+                {
+                    //controleer registration-date policy
+                    var registrationClaimValue = context.User.Claims.FirstOrDefault(c =>
+                    c.Type.Equals("registration-date"))?.Value;
+                    if (DateTime.TryParseExact(registrationClaimValue, "yy-MM-dd",
+                       CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal,
+                       out var registrationTime))
+                       {
+                            return registrationTime.AddYears(1) < DateTime.UtcNow;
+                       }
+                    return false;
+                })
+                );
+            });
+                
+                    
+            
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -65,7 +100,7 @@ namespace Pri.Identity.Api
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();

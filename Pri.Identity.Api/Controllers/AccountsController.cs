@@ -41,7 +41,7 @@ namespace Pri.Identity.Api.Controllers
             JwtSecurityToken token = await GenerateTokenAsync(applicationUser);
             //defined
             string serializedToken = new JwtSecurityTokenHandler().WriteToken(token); //serialize the token
-            return Ok(serializedToken);
+            return Ok(new LoginUserResponseDto { Token = serializedToken});
         }
 
         [HttpPost("register")]
